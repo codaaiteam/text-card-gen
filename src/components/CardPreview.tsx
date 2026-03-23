@@ -27,7 +27,7 @@ export default function CardPreview({ dataUrls, templateName }: CardPreviewProps
           <button
             key={i}
             onClick={() => setExpanded(i)}
-            className="group relative aspect-square rounded-xl overflow-hidden bg-gray-800 ring-1 ring-white/10 hover:ring-indigo-400/60 transition-all duration-200 hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            className="group relative rounded-xl overflow-hidden bg-gray-800 ring-1 ring-white/10 hover:ring-indigo-400/60 transition-all duration-200 hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-indigo-400"
             aria-label={`View card ${i + 1} of ${dataUrls.length} full size`}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}

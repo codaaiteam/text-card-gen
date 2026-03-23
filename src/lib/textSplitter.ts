@@ -24,7 +24,11 @@ function splitIntoSentences(text: string): string[] {
     processed = processed.split(abbr).join(placeholder);
   });
 
-  const rawSentences = processed.split(/(?<=[.!?…])\s+(?=[A-Z"'(\[])/);
+  // Split on Latin sentence boundaries OR CJK sentence-ending punctuation
+  // CJK: split after 。！？…）」』】 (no space/uppercase required)
+  const rawSentences = processed.split(
+    /(?<=[.!?…])\s+(?=[A-Z"'(\[])|(?<=[。！？…）」』】])/
+  );
 
   return rawSentences.map((s) => {
     let restored = s;
@@ -64,7 +68,20 @@ export function splitText(text: string, charsPerCard: number): string[] {
         current = [];
         currentLen = 0;
       }
-      cards.push(sentence);
+      // Break oversized sentences into card-sized chunks at word/clause boundaries
+      let remaining = sentence;
+      while (remaining.length > charsPerCard) {
+        let breakAt = remaining.lastIndexOf("，", charsPerCard);
+        if (breakAt < charsPerCard * 0.3) breakAt = remaining.lastIndexOf("、", charsPerCard);
+        if (breakAt < charsPerCard * 0.3) breakAt = remaining.lastIndexOf(" ", charsPerCard);
+        if (breakAt < charsPerCard * 0.3) breakAt = charsPerCard;
+        cards.push(remaining.substring(0, breakAt + 1).trim());
+        remaining = remaining.substring(breakAt + 1).trim();
+      }
+      if (remaining) {
+        current = [remaining];
+        currentLen = remaining.length;
+      }
       continue;
     }
 
@@ -86,15 +103,75 @@ export function splitText(text: string, charsPerCard: number): string[] {
 }
 
 /**
- * Returns estimated character capacity per card based on layout.
- * Two-column layouts can fit more text than single-column.
+ * Returns estimated character capacity per card based on layout, font size,
+ * and card dimensions.
  */
-export function getCharsPerCard(layout: "single-column" | "two-column"): number {
-  // Conservative estimate to ensure text fits without overflow
-  // 1080px card, ~55px margins each side, 24px font, 1.55 line-height
-  // Two-column: ~42 chars/line × 2 cols × ~18 lines = ~600 chars visible
-  // Single-column: ~50 chars/line × ~18 lines = ~450 chars visible
-  return layout === "two-column" ? 600 : 450;
+export function getCharsPerCard(
+  layout: "single-column" | "two-column",
+  fontSize: number,
+  cardWidth: number,
+  cardHeight: number,
+  hasIllustrations: boolean = true,
+): number {
+  const contentW = cardWidth - 2 * (60 + 10);   // margin + padding
+  // Inline dividers take ~80px each, 2 dividers per card in single-column
+  const dividerSpace = (hasIllustrations && layout === "single-column") ? 160 : 0;
+  const contentH = cardHeight - (60 + 50) - (60 + 40) - dividerSpace;
+  const colW = layout === "two-column" ? Math.floor((contentW - 31) / 2) : contentW;
+
+  const lineHeight = fontSize >= 48 ? 1.8 : fontSize >= 40 ? 1.75 : 1.7;
+  const lines = Math.floor(contentH / (fontSize * lineHeight));
+
+  // Chinese characters are roughly 1em wide
+  const charsPerLine = Math.floor(colW / (fontSize * 0.9));
+  const cols = layout === "two-column" ? 2 : 1;
+
+  // 88% fill factor to prevent last-line clipping
+  return Math.round(charsPerLine * lines * cols * 0.88);
+}
+
+/**
+ * Split Markdown text into card segments.
+ * Uses `---` (horizontal rule) as explicit page breaks.
+ * If no `---`, splits by paragraph groups to fill each card.
+ */
+export function splitMarkdown(text: string, charsPerCard: number): string[] {
+  const cleaned = text.replace(/\r\n/g, "\n").trim();
+  if (!cleaned) return [];
+
+  // Check for explicit page breaks (--- on its own line)
+  const explicitPages = cleaned.split(/\n---\n/).map(s => s.trim()).filter(Boolean);
+  if (explicitPages.length > 1) return explicitPages;
+
+  // No explicit breaks — split by paragraph groups
+  const paragraphs = cleaned.split(/\n{2,}/).map(s => s.trim()).filter(Boolean);
+  if (paragraphs.length === 0) return [cleaned];
+  if (paragraphs.length === 1) return [cleaned];
+
+  const cards: string[] = [];
+  let current: string[] = [];
+  let currentLen = 0;
+
+  for (const para of paragraphs) {
+    // Estimate rendered length: strip markdown syntax for counting
+    const rendered = para.replace(/[#*_~`>\[\]()!]/g, "").replace(/\!\[.*?\]\(.*?\)/g, "[img]");
+    const paraLen = rendered.length;
+
+    if (currentLen + paraLen > charsPerCard && current.length > 0) {
+      cards.push(current.join("\n\n"));
+      current = [para];
+      currentLen = paraLen;
+    } else {
+      current.push(para);
+      currentLen += paraLen;
+    }
+  }
+
+  if (current.length > 0) {
+    cards.push(current.join("\n\n"));
+  }
+
+  return cards;
 }
 
 export function suggestWordsPerCard(text: string): number {

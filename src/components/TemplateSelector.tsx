@@ -15,7 +15,7 @@ function LayoutPreview({ tpl }: { tpl: TemplateConfig }) {
     <div className="absolute inset-0 flex flex-col px-3 py-2.5 gap-1.5">
       {/* Header line */}
       <div className="flex items-center justify-between">
-        <div className="h-[2px] flex-1 rounded-full" style={{ background: accent, opacity: 0.7 }} />
+        <div className="h-[2px] flex-1 rounded-full" style={{ background: accent, opacity: 0.5 }} />
       </div>
       {/* Body lines */}
       <div className={`flex-1 flex ${isTwoCol ? "gap-1.5" : "flex-col gap-[3px]"}`}>
@@ -23,19 +23,19 @@ function LayoutPreview({ tpl }: { tpl: TemplateConfig }) {
           <>
             <div className="flex-1 flex flex-col gap-[3px]">
               {[95, 90, 85, 95, 80, 90, 85].map((w, i) => (
-                <div key={i} className="h-[2px] rounded-full" style={{ width: `${w}%`, background: accent, opacity: 0.25 }} />
+                <div key={i} className="h-[2px] rounded-full" style={{ width: `${w}%`, background: accent, opacity: 0.2 }} />
               ))}
             </div>
-            <div className="w-[1px]" style={{ background: accent, opacity: 0.15 }} />
+            <div className="w-[1px]" style={{ background: accent, opacity: 0.1 }} />
             <div className="flex-1 flex flex-col gap-[3px]">
               {[90, 95, 85, 90, 95, 80, 85].map((w, i) => (
-                <div key={i} className="h-[2px] rounded-full" style={{ width: `${w}%`, background: accent, opacity: 0.25 }} />
+                <div key={i} className="h-[2px] rounded-full" style={{ width: `${w}%`, background: accent, opacity: 0.2 }} />
               ))}
             </div>
           </>
         ) : (
           [95, 100, 90, 85, 95, 80, 100, 90, 85, 95].map((w, i) => (
-            <div key={i} className="h-[2px] rounded-full" style={{ width: `${w}%`, background: accent, opacity: 0.25 }} />
+            <div key={i} className="h-[2px] rounded-full" style={{ width: `${w}%`, background: accent, opacity: 0.2 }} />
           ))
         )}
       </div>
@@ -45,12 +45,12 @@ function LayoutPreview({ tpl }: { tpl: TemplateConfig }) {
 
 export default function TemplateSelector({ selectedId, onSelect }: TemplateSelectorProps) {
   return (
-    <div className="grid grid-cols-5 gap-3">
+    <div className="grid grid-cols-5 gap-2">
       {templates.map((tpl) => (
         <button
           key={tpl.id}
           onClick={() => onSelect(tpl.id)}
-          className="group flex flex-col items-center gap-2 focus:outline-none"
+          className="group flex flex-col items-center gap-1.5 focus:outline-none"
           title={tpl.description}
           aria-label={`Select ${tpl.name} template`}
           aria-pressed={selectedId === tpl.id}
@@ -66,11 +66,11 @@ export default function TemplateSelector({ selectedId, onSelect }: TemplateSelec
             <LayoutPreview tpl={tpl} />
           </div>
           <span
-            className={`text-xs font-medium text-center leading-tight transition-colors ${
-              selectedId === tpl.id ? "text-indigo-300" : "text-gray-400 group-hover:text-gray-200"
+            className={`text-[10px] font-medium text-center leading-tight transition-colors ${
+              selectedId === tpl.id ? "text-indigo-300" : "text-gray-500 group-hover:text-gray-300"
             }`}
           >
-            {tpl.name}
+            {tpl.nameZh}
           </span>
         </button>
       ))}
