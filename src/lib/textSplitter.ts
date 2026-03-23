@@ -1,24 +1,16 @@
 /**
- * Splits input text into segments suitable for card display.
+ * Splits input text into segments for newspaper-style card display.
  *
- * Strategy:
- * 1. Tokenize into sentences using a regex that handles common abbreviations.
- * 2. Greedily accumulate sentences until the running word count reaches
- *    the target. Never break mid-sentence.
- * 3. If a single sentence exceeds the target it occupies its own card.
+ * No artificial character/word limit — each card holds as much text as
+ * will visually fit at the given font size. The caller specifies an
+ * approximate character capacity per card (based on layout + font size).
  */
 
 function countWords(text: string): number {
   return text.trim().split(/\s+/).filter(Boolean).length;
 }
 
-/**
- * Splits `text` into an array of sentence strings.
- * Handles "e.g.", "i.e.", "Mr.", "Dr.", "vs." etc. by not splitting on
- * abbreviation-period patterns.
- */
 function splitIntoSentences(text: string): string[] {
-  // Replace known abbreviations temporarily to avoid false splits
   const abbrevs = [
     "Mr.", "Mrs.", "Ms.", "Dr.", "Prof.", "Sr.", "Jr.", "vs.",
     "etc.", "e.g.", "i.e.", "Inc.", "Ltd.", "Corp.", "Fig.", "St.",
@@ -32,7 +24,6 @@ function splitIntoSentences(text: string): string[] {
     processed = processed.split(abbr).join(placeholder);
   });
 
-  // Split on sentence-ending punctuation followed by whitespace/end
   const rawSentences = processed.split(/(?<=[.!?…])\s+(?=[A-Z"'(\[])/);
 
   return rawSentences.map((s) => {
@@ -44,40 +35,46 @@ function splitIntoSentences(text: string): string[] {
   }).filter(Boolean);
 }
 
-export function splitText(text: string, wordsPerCard: number): string[] {
+/**
+ * Split text into card segments.
+ * `charsPerCard` is the approximate visual capacity of one card.
+ * For two-column layout at 23px font, ~800 chars fit.
+ * For single-column at 23px font, ~600 chars fit.
+ */
+export function splitText(text: string, charsPerCard: number): string[] {
   const cleaned = text.replace(/\r\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
   if (!cleaned) return [];
+
+  // If text fits in one card, return it as-is
+  if (cleaned.length <= charsPerCard) return [cleaned];
 
   const sentences = splitIntoSentences(cleaned);
   if (sentences.length === 0) return [cleaned];
 
   const cards: string[] = [];
   let current: string[] = [];
-  let currentWords = 0;
+  let currentLen = 0;
 
   for (const sentence of sentences) {
-    const sentWords = countWords(sentence);
+    const sentLen = sentence.length;
 
-    if (sentWords >= wordsPerCard) {
-      // Flush current buffer first
+    if (sentLen >= charsPerCard) {
       if (current.length > 0) {
         cards.push(current.join(" "));
         current = [];
-        currentWords = 0;
+        currentLen = 0;
       }
-      // Sentence gets its own card
       cards.push(sentence);
       continue;
     }
 
-    if (currentWords + sentWords > wordsPerCard && current.length > 0) {
-      // Flush and start new card
+    if (currentLen + sentLen + 1 > charsPerCard && current.length > 0) {
       cards.push(current.join(" "));
       current = [sentence];
-      currentWords = sentWords;
+      currentLen = sentLen;
     } else {
       current.push(sentence);
-      currentWords += sentWords;
+      currentLen += sentLen + 1;
     }
   }
 
@@ -89,14 +86,16 @@ export function splitText(text: string, wordsPerCard: number): string[] {
 }
 
 /**
- * Returns a suggested words-per-card value based on text length
- * targeting roughly 6-10 cards total.
+ * Returns estimated character capacity per card based on layout.
+ * Two-column layouts can fit more text than single-column.
  */
+export function getCharsPerCard(layout: "single-column" | "two-column"): number {
+  return layout === "two-column" ? 900 : 650;
+}
+
 export function suggestWordsPerCard(text: string): number {
   const total = countWords(text);
   if (total <= 0) return 120;
-  // Target ~8 cards
   const suggested = Math.ceil(total / 8);
-  // Clamp between 80 and 200
-  return Math.max(80, Math.min(200, suggested));
+  return Math.max(80, Math.min(250, suggested));
 }

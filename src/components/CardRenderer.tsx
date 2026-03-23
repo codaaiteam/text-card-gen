@@ -1,15 +1,5 @@
 "use client";
 
-/**
- * CardRenderer
- *
- * Renders a set of 1080x1080 cards as hidden DOM nodes.
- * html2canvas-pro captures each one as a PNG data URL.
- *
- * The component is rendered off-screen (not display:none — html2canvas
- * needs the element to be painted) using position:fixed + left:-9999px.
- */
-
 import { forwardRef, useImperativeHandle, useRef } from "react";
 import { TemplateConfig } from "@/lib/templates";
 
@@ -23,169 +13,89 @@ interface CardRendererProps {
 }
 
 const CARD_SIZE = 1080;
-const PADDING = 80;
 
-// ---- Border overlay components (full 1080px scale) ----
+// ─── Border decorations ──────────────────────────────────────
 
-function ElegantGoldBorder() {
+function NewspaperBorder() {
   return (
     <>
-      {/* Outer border */}
-      <div
-        style={{
-          position: "absolute",
-          inset: "40px",
-          border: "2.5px solid #c9a227",
-          pointerEvents: "none",
-          boxSizing: "border-box",
-        }}
-      />
-      {/* Inner border */}
-      <div
-        style={{
-          position: "absolute",
-          inset: "55px",
-          border: "1px solid #c9a227",
-          pointerEvents: "none",
-          boxSizing: "border-box",
-        }}
-      />
-      {/* Corner ornaments */}
-      {(
-        [
-          { top: "28px", left: "28px" },
-          { top: "28px", right: "28px" },
-          { bottom: "28px", left: "28px" },
-          { bottom: "28px", right: "28px" },
-        ] as React.CSSProperties[]
-      ).map((pos, i) => (
-        <div
-          key={i}
-          style={{
-            position: "absolute",
-            ...pos,
-            color: "#c9a227",
-            fontSize: "24px",
-            lineHeight: 1,
-            pointerEvents: "none",
-          }}
-        >
-          ✦
-        </div>
-      ))}
+      <div style={{ position: "absolute", top: 30, left: 30, right: 30, height: 3, background: "#1a1a1a" }} />
+      <div style={{ position: "absolute", top: 35, left: 30, right: 30, height: 1, background: "#1a1a1a" }} />
+      <div style={{ position: "absolute", bottom: 30, left: 30, right: 30, height: 1, background: "#1a1a1a" }} />
+      <div style={{ position: "absolute", top: 30, left: 30, width: 1, bottom: 30, background: "#1a1a1a" }} />
+      <div style={{ position: "absolute", top: 30, right: 30, width: 1, bottom: 30, background: "#1a1a1a" }} />
     </>
   );
 }
 
-function ModernGradientBorder() {
-  // Renders only the 3px gradient border ring; interior is transparent so
-  // the card background and text show through.
+function MagazineBorder() {
   return (
     <>
-      {/* Top edge */}
-      <div style={{ position: "absolute", top: "40px", left: "40px", right: "40px", height: "3px", background: "linear-gradient(90deg, #6366f1, #8b5cf6, #06b6d4)", pointerEvents: "none", zIndex: 0 }} />
-      {/* Bottom edge */}
-      <div style={{ position: "absolute", bottom: "40px", left: "40px", right: "40px", height: "3px", background: "linear-gradient(90deg, #06b6d4, #8b5cf6, #6366f1)", pointerEvents: "none", zIndex: 0 }} />
-      {/* Left edge */}
-      <div style={{ position: "absolute", top: "40px", left: "40px", width: "3px", bottom: "40px", background: "linear-gradient(180deg, #6366f1, #8b5cf6, #06b6d4)", pointerEvents: "none", zIndex: 0 }} />
-      {/* Right edge */}
-      <div style={{ position: "absolute", top: "40px", right: "40px", width: "3px", bottom: "40px", background: "linear-gradient(180deg, #06b6d4, #8b5cf6, #6366f1)", pointerEvents: "none", zIndex: 0 }} />
+      <div style={{ position: "absolute", top: 30, left: 50, right: 50, height: 3, background: "#e63946" }} />
+      <div style={{ position: "absolute", bottom: 30, left: 50, right: 50, height: 1, background: "#e6394633" }} />
     </>
   );
 }
 
-function DarkModeBorder() {
-  return (
-    <div
-      style={{
-        position: "absolute",
-        inset: "40px",
-        border: "2px solid #7c3aed",
-        boxShadow: "0 0 20px #7c3aed66, inset 0 0 20px #7c3aed11",
-        pointerEvents: "none",
-        boxSizing: "border-box",
-      }}
-    />
-  );
-}
-
-function VintagePaperBorder() {
+function BroadsheetBorder() {
   return (
     <>
-      <div
-        style={{
-          position: "absolute",
-          inset: "40px",
-          border: "3px solid #8b4513",
-          pointerEvents: "none",
-          boxSizing: "border-box",
-        }}
-      />
-      <div
-        style={{
-          position: "absolute",
-          inset: "56px",
-          border: "1px solid #8b4513",
-          pointerEvents: "none",
-          boxSizing: "border-box",
-        }}
-      />
-      {(
-        [
-          { top: "28px", left: "28px" },
-          { top: "28px", right: "28px" },
-          { bottom: "28px", left: "28px" },
-          { bottom: "28px", right: "28px" },
-        ] as React.CSSProperties[]
-      ).map((pos, i) => (
-        <div
-          key={i}
-          style={{
-            position: "absolute",
-            ...pos,
-            color: "#8b4513",
-            fontSize: "22px",
-            lineHeight: 1,
-            pointerEvents: "none",
-          }}
-        >
-          ❧
-        </div>
-      ))}
+      <div style={{ position: "absolute", top: 28, left: 40, right: 40, height: 2, background: "#1a1a1a" }} />
+      <div style={{ position: "absolute", top: 33, left: 40, right: 40, height: 1, background: "#999" }} />
+      <div style={{ position: "absolute", bottom: 28, left: 40, right: 40, height: 2, background: "#1a1a1a" }} />
+      <div style={{ position: "absolute", bottom: 33, left: 40, right: 40, height: 1, background: "#999" }} />
     </>
   );
 }
 
-function BoldStatementBorder() {
+function GazetteBorder() {
   return (
-    <div
-      style={{
-        position: "absolute",
-        inset: "40px",
-        border: "4px solid #ffffff",
-        pointerEvents: "none",
-        boxSizing: "border-box",
-      }}
-    />
+    <>
+      <div style={{ position: "absolute", top: 30, left: 40, right: 40, height: 1, background: "#ffd70044" }} />
+      <div style={{ position: "absolute", bottom: 30, left: 40, right: 40, height: 1, background: "#ffd70044" }} />
+      <div style={{ position: "absolute", top: 30, left: 40, width: 1, bottom: 30, background: "#ffd70022" }} />
+      <div style={{ position: "absolute", top: 30, right: 40, width: 1, bottom: 30, background: "#ffd70022" }} />
+    </>
+  );
+}
+
+function MinimalSerifBorder() {
+  return (
+    <>
+      <div style={{ position: "absolute", top: 40, left: 60, right: 60, height: 1, background: "#ddd" }} />
+      <div style={{ position: "absolute", bottom: 40, left: 60, right: 60, height: 1, background: "#ddd" }} />
+    </>
   );
 }
 
 function BorderForTemplate({ style }: { style: TemplateConfig["borderStyle"] }) {
   switch (style) {
-    case "elegant-gold":
-      return <ElegantGoldBorder />;
-    case "modern-gradient":
-      return <ModernGradientBorder />;
-    case "dark-mode":
-      return <DarkModeBorder />;
-    case "vintage-paper":
-      return <VintagePaperBorder />;
-    case "bold-statement":
-      return <BoldStatementBorder />;
+    case "newspaper": return <NewspaperBorder />;
+    case "magazine": return <MagazineBorder />;
+    case "broadsheet": return <BroadsheetBorder />;
+    case "gazette": return <GazetteBorder />;
+    case "minimal-serif": return <MinimalSerifBorder />;
   }
 }
 
-// Single card DOM node
+// ─── Column divider for two-column layout ────────────────────
+
+function ColumnDivider({ color }: { color: string }) {
+  return (
+    <div style={{
+      position: "absolute",
+      top: 0,
+      bottom: 0,
+      left: "50%",
+      width: 1,
+      background: color,
+      opacity: 0.3,
+    }} />
+  );
+}
+
+// ─── Card node ───────────────────────────────────────────────
+
 function CardNode({
   text,
   index,
@@ -199,6 +109,22 @@ function CardNode({
   template: TemplateConfig;
   nodeRef: React.RefObject<HTMLDivElement | null>;
 }) {
+  const isTwoCol = template.layout === "two-column";
+  const margin = template.borderStyle === "newspaper" || template.borderStyle === "broadsheet" ? 55 : 60;
+
+  // Split text into two columns for two-column layout
+  let col1Text = text;
+  let col2Text = "";
+  if (isTwoCol) {
+    const mid = Math.ceil(text.length / 2);
+    // Find a good break point near the middle
+    let breakAt = text.lastIndexOf(". ", mid + 50);
+    if (breakAt < mid - 100) breakAt = text.lastIndexOf(" ", mid);
+    if (breakAt < 10) breakAt = mid;
+    col1Text = text.substring(0, breakAt + 1).trim();
+    col2Text = text.substring(breakAt + 1).trim();
+  }
+
   return (
     <div
       ref={nodeRef}
@@ -208,77 +134,109 @@ function CardNode({
         top: "0px",
         width: `${CARD_SIZE}px`,
         height: `${CARD_SIZE}px`,
-        background: template.cardBg,
         overflow: "hidden",
         boxSizing: "border-box",
+        background: template.cardBg,
         ...template.cardStyle,
       }}
     >
-      {/* Background fill for modern-gradient (covers the white inner div of the border trick) */}
-      {template.borderStyle === "modern-gradient" && (
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            background: "#ffffff",
-            zIndex: 0,
-          }}
-        />
-      )}
-
       <BorderForTemplate style={template.borderStyle} />
 
-      {/* Text content */}
-      <div
-        style={{
-          position: "absolute",
-          inset: `${PADDING + 30}px`,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          zIndex: 1,
-        }}
-      >
-        <p
-          data-card-text="true"
-          style={{
+      {/* Header bar */}
+      <div style={{
+        position: "absolute",
+        top: margin,
+        left: margin + 10,
+        right: margin + 10,
+        zIndex: 1,
+        ...template.headerStyle,
+      }}>
+        <span>TextCard</span>
+        <span style={{ float: "right", fontSize: "14px", fontWeight: "400", opacity: 0.6 }}>
+          Page {index + 1} of {total}
+        </span>
+      </div>
+
+      {/* Body content */}
+      <div style={{
+        position: "absolute",
+        top: margin + 50,
+        left: margin + 10,
+        right: margin + 10,
+        bottom: margin + 10,
+        zIndex: 1,
+        display: isTwoCol ? "flex" : "block",
+        gap: isTwoCol ? "30px" : undefined,
+      }}>
+        {isTwoCol ? (
+          <>
+            {/* Column 1 */}
+            <div style={{ flex: 1, overflow: "hidden", position: "relative" }}>
+              <p style={{
+                ...template.textStyle,
+                margin: 0,
+                whiteSpace: "pre-wrap",
+                wordBreak: "break-word",
+                overflowWrap: "break-word",
+              }}>
+                {col1Text}
+              </p>
+            </div>
+            {/* Column divider */}
+            <div style={{
+              width: 1,
+              background: template.textStyle.color || "#333",
+              opacity: 0.15,
+              flexShrink: 0,
+            }} />
+            {/* Column 2 */}
+            <div style={{ flex: 1, overflow: "hidden" }}>
+              <p style={{
+                ...template.textStyle,
+                margin: 0,
+                whiteSpace: "pre-wrap",
+                wordBreak: "break-word",
+                overflowWrap: "break-word",
+              }}>
+                {col2Text}
+              </p>
+            </div>
+          </>
+        ) : (
+          <p style={{
             ...template.textStyle,
             margin: 0,
-            padding: 0,
             whiteSpace: "pre-wrap",
             wordBreak: "break-word",
             overflowWrap: "break-word",
-            maxWidth: "100%",
-          }}
-        >
-          {text}
-        </p>
+          }}>
+            {text}
+          </p>
+        )}
       </div>
 
-      {/* Page number */}
-      <div
-        style={{
-          position: "absolute",
-          bottom: "56px",
-          left: 0,
-          right: 0,
-          textAlign: "center",
-          ...template.pageNumStyle,
-          zIndex: 1,
-        }}
-      >
-        {index + 1} / {total}
+      {/* Page number bottom */}
+      <div style={{
+        position: "absolute",
+        bottom: margin - 15,
+        left: 0,
+        right: 0,
+        textAlign: "center",
+        ...template.pageNumStyle,
+        zIndex: 1,
+      }}>
+        — {index + 1} —
       </div>
     </div>
   );
 }
 
+// ─── Renderer ────────────────────────────────────────────────
+
 const CardRenderer = forwardRef<CardRendererHandle, CardRendererProps>(
   function CardRenderer({ segments, template }, ref) {
     const nodeRefs = useRef<Array<React.RefObject<HTMLDivElement | null>>>([]);
 
-    // Keep refs array in sync with segments length
     if (nodeRefs.current.length !== segments.length) {
       nodeRefs.current = segments.map(() => ({ current: null }));
     }
@@ -292,7 +250,6 @@ const CardRenderer = forwardRef<CardRendererHandle, CardRendererProps>(
           const el = nodeRefs.current[i]?.current;
           if (!el) continue;
 
-          // Temporarily nudge into viewport for reliable capture
           const prev = el.style.left;
           el.style.left = "0px";
           el.style.top = "0px";

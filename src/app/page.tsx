@@ -2,7 +2,7 @@
 
 import { useCallback, useRef, useState } from "react";
 import { templates } from "@/lib/templates";
-import { splitText, suggestWordsPerCard } from "@/lib/textSplitter";
+import { splitText, getCharsPerCard } from "@/lib/textSplitter";
 import TemplateSelector from "@/components/TemplateSelector";
 import CardPreview from "@/components/CardPreview";
 import CardRenderer, { CardRendererHandle } from "@/components/CardRenderer";
@@ -21,9 +21,7 @@ type AppState = "idle" | "generating" | "ready" | "downloading";
 
 export default function Home() {
   const [inputText, setInputText] = useState(SAMPLE_TEXT);
-  const [selectedTemplate, setSelectedTemplate] = useState("elegant-gold");
-  const [wordsPerCard, setWordsPerCard] = useState(120);
-  const [autoWords, setAutoWords] = useState(true);
+  const [selectedTemplate, setSelectedTemplate] = useState("newspaper");
 
   const [appState, setAppState] = useState<AppState>("idle");
   const [segments, setSegments] = useState<string[]>([]);
@@ -35,16 +33,9 @@ export default function Home() {
 
   const activeTemplate = templates.find((t) => t.id === selectedTemplate) ?? templates[0];
 
-  const wordCount = inputText.trim()
-    ? inputText.trim().split(/\s+/).filter(Boolean).length
-    : 0;
-
-  const effectiveWordsPerCard = autoWords
-    ? suggestWordsPerCard(inputText)
-    : wordsPerCard;
-
-  const estimatedCards =
-    wordCount > 0 ? Math.ceil(wordCount / effectiveWordsPerCard) : 0;
+  const charCount = inputText.trim().length;
+  const charsPerCard = getCharsPerCard(activeTemplate.layout);
+  const estimatedCards = charCount > 0 ? Math.ceil(charCount / charsPerCard) : 0;
 
   const handleGenerate = useCallback(async () => {
     if (!inputText.trim()) return;
@@ -53,7 +44,7 @@ export default function Home() {
     setCardDataUrls([]);
     setProgress(0);
 
-    const segs = splitText(inputText, effectiveWordsPerCard);
+    const segs = splitText(inputText, charsPerCard);
     setSegments(segs);
 
     // Wait one tick for CardRenderer to mount its nodes
@@ -108,7 +99,7 @@ export default function Home() {
       setErrorMsg(err instanceof Error ? err.message : "Generation failed.");
       setAppState("idle");
     }
-  }, [inputText, effectiveWordsPerCard, activeTemplate]);
+  }, [inputText, charsPerCard, activeTemplate]);
 
   const handleDownload = useCallback(async () => {
     if (cardDataUrls.length === 0) return;
@@ -187,9 +178,10 @@ export default function Home() {
               className="block text-sm font-medium text-gray-300 mb-2"
             >
               Your Text
-              {wordCount > 0 && (
+              {charCount > 0 && (
                 <span className="ml-2 text-xs font-normal text-gray-500">
-                  {wordCount.toLocaleString()} words
+                  {charCount.toLocaleString()} chars
+                  {estimatedCards > 0 && ` → ~${estimatedCards} cards`}
                 </span>
               )}
             </label>
@@ -226,62 +218,13 @@ export default function Home() {
             />
           </section>
 
-          {/* Words per card */}
+          {/* Layout info */}
           <section>
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-sm font-medium text-gray-300">
-                Words per Card
-              </p>
-              <label className="flex items-center gap-2 text-xs text-gray-400 select-none cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={autoWords}
-                  onChange={(e) => {
-                    setAutoWords(e.target.checked);
-                    setCardDataUrls([]);
-                    setAppState("idle");
-                  }}
-                  className="accent-indigo-500"
-                />
-                Auto
-              </label>
-            </div>
-
-            {!autoWords && (
-              <div className="flex items-center gap-3">
-                <input
-                  type="range"
-                  min={50}
-                  max={250}
-                  step={10}
-                  value={wordsPerCard}
-                  onChange={(e) => {
-                    setWordsPerCard(Number(e.target.value));
-                    setCardDataUrls([]);
-                    setAppState("idle");
-                  }}
-                  className="flex-1 accent-indigo-500"
-                  aria-label="Words per card slider"
-                />
-                <span className="w-10 text-right text-sm font-mono text-indigo-300">
-                  {wordsPerCard}
-                </span>
-              </div>
-            )}
-
-            <div className="mt-2 text-xs text-gray-500">
-              {autoWords ? (
-                <span>
-                  Auto: ~{effectiveWordsPerCard} words/card &rarr;{" "}
-                  <strong className="text-gray-400">{estimatedCards} cards</strong>
-                </span>
-              ) : (
-                <span>
-                  ~{effectiveWordsPerCard} words/card &rarr;{" "}
-                  <strong className="text-gray-400">{estimatedCards} cards</strong>
-                </span>
-              )}
-            </div>
+            <p className="text-xs text-gray-500">
+              Layout: <strong className="text-gray-400">{activeTemplate.layout === "two-column" ? "Two columns" : "Single column"}</strong>
+              {" · ~"}{charsPerCard} chars/card
+              {estimatedCards > 0 && <> &rarr; <strong className="text-gray-400">{estimatedCards} cards</strong></>}
+            </p>
           </section>
 
           {/* Error */}
