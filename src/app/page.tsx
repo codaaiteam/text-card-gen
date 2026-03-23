@@ -20,7 +20,7 @@ By the time she finished, the coffee was cold. The sparrows were gone. But the c
 type AppState = "idle" | "generating" | "ready" | "downloading";
 
 export default function Home() {
-  const [inputText, setInputText] = useState(SAMPLE_TEXT);
+  const [inputText, setInputText] = useState("");
   const [selectedTemplate, setSelectedTemplate] = useState("newspaper");
 
   const [appState, setAppState] = useState<AppState>("idle");

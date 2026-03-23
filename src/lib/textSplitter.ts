@@ -90,7 +90,11 @@ export function splitText(text: string, charsPerCard: number): string[] {
  * Two-column layouts can fit more text than single-column.
  */
 export function getCharsPerCard(layout: "single-column" | "two-column"): number {
-  return layout === "two-column" ? 900 : 650;
+  // Conservative estimate to ensure text fits without overflow
+  // 1080px card, ~55px margins each side, 24px font, 1.55 line-height
+  // Two-column: ~42 chars/line × 2 cols × ~18 lines = ~600 chars visible
+  // Single-column: ~50 chars/line × ~18 lines = ~450 chars visible
+  return layout === "two-column" ? 600 : 450;
 }
 
 export function suggestWordsPerCard(text: string): number {
