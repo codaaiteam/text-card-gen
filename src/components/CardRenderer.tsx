@@ -4,7 +4,7 @@ import { forwardRef, useImperativeHandle, useRef } from "react";
 import { TemplateConfig } from "@/lib/templates";
 
 export interface CardRendererHandle {
-  capture: () => Promise<string[]>;
+  capture: (onProgress?: (done: number, total: number) => void) => Promise<string[]>;
 }
 
 interface CardRendererProps {
@@ -129,9 +129,9 @@ function CardNode({
     <div
       ref={nodeRef}
       style={{
-        position: "fixed",
-        left: "-9999px",
-        top: "0px",
+        position: "absolute",
+        left: "0px",
+        top: `${index * CARD_SIZE}px`,
         width: `${CARD_SIZE}px`,
         height: `${CARD_SIZE}px`,
         overflow: "hidden",
@@ -243,18 +243,17 @@ const CardRenderer = forwardRef<CardRendererHandle, CardRendererProps>(
     }
 
     useImperativeHandle(ref, () => ({
-      async capture(): Promise<string[]> {
+      async capture(onProgress?: (done: number, total: number) => void): Promise<string[]> {
         const html2canvas = (await import("html2canvas-pro")).default;
         const results: string[] = [];
+        const total = segments.length;
 
-        for (let i = 0; i < segments.length; i++) {
+        for (let i = 0; i < total; i++) {
           const el = nodeRefs.current[i]?.current;
           if (!el) continue;
 
-          const prev = el.style.left;
-          el.style.left = "0px";
-          el.style.top = "0px";
-
+          // Cards are stacked vertically in the container (position: absolute)
+          // html2canvas captures each one at its position
           const canvas = await html2canvas(el, {
             width: CARD_SIZE,
             height: CARD_SIZE,
@@ -264,10 +263,8 @@ const CardRenderer = forwardRef<CardRendererHandle, CardRendererProps>(
             backgroundColor: template.cardBg,
           });
 
-          el.style.left = prev;
-          el.style.top = "-9999px";
-
           results.push(canvas.toDataURL("image/png"));
+          onProgress?.(i + 1, total);
         }
 
         return results;

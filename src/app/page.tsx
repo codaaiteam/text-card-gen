@@ -47,52 +47,17 @@ export default function Home() {
     const segs = splitText(inputText, charsPerCard);
     setSegments(segs);
 
-    // Wait one tick for CardRenderer to mount its nodes
-    await new Promise((r) => setTimeout(r, 100));
+    // Wait for CardRenderer to mount its nodes (longer delay for mobile)
+    await new Promise((r) => setTimeout(r, 300));
 
     try {
       if (!rendererRef.current) throw new Error("Renderer not ready.");
-      const urls: string[] = [];
-      const total = segs.length;
 
-      // We capture in batches and update progress per card via a patched loop
-      // The CardRendererHandle exposes a single `capture()` call; we call it
-      // and poll a progress counter through a wrapper.
-      const allUrls = await (async () => {
-        const html2canvas = (await import("html2canvas-pro")).default;
-        // Access internal refs via the DOM directly on rendered nodes.
-        // We replicate the capture loop here to show per-card progress.
-        const container = document.getElementById("card-renderer-container");
-        if (!container) return await rendererRef.current!.capture();
+      const allUrls = await rendererRef.current.capture((done, total) => {
+        setProgress(Math.round((done / total) * 100));
+      });
 
-        const cards = container.children;
-        const results: string[] = [];
-        for (let i = 0; i < cards.length; i++) {
-          const el = cards[i] as HTMLElement;
-          const prev = el.style.left;
-          el.style.left = "0px";
-          el.style.top = "0px";
-
-          const canvas = await html2canvas(el, {
-            width: 1080,
-            height: 1080,
-            scale: 1,
-            useCORS: true,
-            logging: false,
-            backgroundColor: activeTemplate.cardBg,
-          });
-
-          el.style.left = prev;
-          el.style.top = "-9999px";
-
-          results.push(canvas.toDataURL("image/png"));
-          setProgress(Math.round(((i + 1) / total) * 100));
-        }
-        return results;
-      })();
-
-      urls.push(...allUrls);
-      setCardDataUrls(urls);
+      setCardDataUrls(allUrls);
       setAppState("ready");
     } catch (err) {
       console.error(err);
@@ -456,7 +421,7 @@ export default function Home() {
       </main>
 
       {/* Hidden card renderer — off-screen, but painted */}
-      <div id="card-renderer-container" aria-hidden="true" style={{ position: "absolute", left: "-99999px", top: 0, pointerEvents: "none" }}>
+      <div id="card-renderer-container" aria-hidden="true" style={{ position: "absolute", left: "-20000px", top: 0, width: `${1080}px`, overflow: "hidden", pointerEvents: "none" }}>
         <CardRenderer
           ref={rendererRef}
           segments={segments}
