@@ -456,7 +456,7 @@ export default function Home() {
       </main>
 
       {/* Hidden card renderer — off-screen, but painted */}
-      <div id="card-renderer-container" aria-hidden="true" style={{ position: "fixed", left: "-9999px", top: 0, width: 0, height: 0, overflow: "hidden", pointerEvents: "none" }}>
+      <div id="card-renderer-container" aria-hidden="true" style={{ position: "absolute", left: "-99999px", top: 0, pointerEvents: "none" }}>
         <CardRenderer
           ref={rendererRef}
           segments={segments}
