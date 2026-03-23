@@ -244,16 +244,28 @@ const CardRenderer = forwardRef<CardRendererHandle, CardRendererProps>(
 
     useImperativeHandle(ref, () => ({
       async capture(onProgress?: (done: number, total: number) => void): Promise<string[]> {
+        const total = segments.length;
+        if (total === 0) return [];
+
+        // Wait until all card DOM nodes are mounted (mobile can be slow)
+        const maxWait = 10000; // 10 seconds max
+        const start = Date.now();
+        while (Date.now() - start < maxWait) {
+          const mounted = nodeRefs.current.filter(r => r?.current !== null).length;
+          if (mounted >= total) break;
+          await new Promise(r => setTimeout(r, 100));
+        }
+
         const html2canvas = (await import("html2canvas-pro")).default;
         const results: string[] = [];
-        const total = segments.length;
 
         for (let i = 0; i < total; i++) {
           const el = nodeRefs.current[i]?.current;
-          if (!el) continue;
+          if (!el) {
+            console.warn(`Card ${i} ref not mounted, skipping`);
+            continue;
+          }
 
-          // Cards are stacked vertically in the container (position: absolute)
-          // html2canvas captures each one at its position
           const canvas = await html2canvas(el, {
             width: CARD_SIZE,
             height: CARD_SIZE,
