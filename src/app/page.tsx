@@ -198,9 +198,23 @@ export default function Home() {
               className="w-full rounded-xl bg-gray-800 border border-white/10 text-gray-100 placeholder-gray-600 text-sm leading-relaxed px-4 py-3 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
               aria-describedby="input-text-hint"
             />
-            <p id="input-text-hint" className="mt-1.5 text-xs text-gray-500">
-              Text will be split into multiple cards automatically.
-            </p>
+            <div className="mt-1.5 flex items-center justify-between">
+              <p className="text-xs text-gray-500">
+                Text will be split into multiple cards automatically.
+              </p>
+              {charCount > 0 && (
+                <button
+                  onClick={() => {
+                    setInputText("");
+                    setCardDataUrls([]);
+                    setAppState("idle");
+                  }}
+                  className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
           </section>
 
           {/* Template */}
