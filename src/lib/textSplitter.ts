@@ -112,22 +112,24 @@ export function getCharsPerCard(
   cardWidth: number,
   cardHeight: number,
   hasIllustrations: boolean = true,
+  fillRatio: number = 0.70,
+  cardPadding?: [number, number, number],
+  showHeader?: boolean,
 ): number {
-  const contentW = cardWidth - 2 * (60 + 10);   // margin + padding
-  // Inline dividers take ~80px each, 2 dividers per card in single-column
+  const pad = cardPadding ?? [48, 50, 48];
+  const headerH = showHeader !== false ? 50 : 10;
+  const contentW = cardWidth - 2 * pad[1];
   const dividerSpace = (hasIllustrations && layout === "single-column") ? 160 : 0;
-  const contentH = cardHeight - (60 + 50) - (60 + 40) - dividerSpace;
+  const contentH = cardHeight - pad[0] - headerH - pad[2] - 30 - dividerSpace;
   const colW = layout === "two-column" ? Math.floor((contentW - 31) / 2) : contentW;
 
   const lineHeight = fontSize >= 48 ? 1.8 : fontSize >= 40 ? 1.75 : 1.7;
   const lines = Math.floor(contentH / (fontSize * lineHeight));
 
-  // Chinese characters are roughly 1em wide
   const charsPerLine = Math.floor(colW / (fontSize * 0.9));
   const cols = layout === "two-column" ? 2 : 1;
 
-  // 88% fill factor to prevent last-line clipping
-  return Math.round(charsPerLine * lines * cols * 0.88);
+  return Math.round(charsPerLine * lines * cols * fillRatio);
 }
 
 /**

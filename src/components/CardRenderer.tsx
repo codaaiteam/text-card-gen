@@ -20,63 +20,16 @@ interface CardRendererProps {
   isMarkdown?: boolean;
 }
 
-// ─── Border decorations ──────────────────────────────────────
+// ─── Border decoration (data-driven) ─────────────────────────
 
-function BookClassicBorder() {
+function CardBorder({ color }: { color: string }) {
+  if (!color || color.endsWith("00")) return null; // transparent = no border
   return (
     <>
-      <div style={{ position: "absolute", top: 45, left: 55, right: 55, height: 1, background: "#d4c9b4" }} />
-      <div style={{ position: "absolute", bottom: 45, left: 55, right: 55, height: 1, background: "#d4c9b4" }} />
+      <div style={{ position: "absolute", top: 48, left: 55, right: 55, height: 1, background: color }} />
+      <div style={{ position: "absolute", bottom: 48, left: 55, right: 55, height: 1, background: color }} />
     </>
   );
-}
-
-function BookMinimalBorder() {
-  return (
-    <>
-      <div style={{ position: "absolute", top: 50, left: 60, right: 60, height: 1, background: "#eee" }} />
-      <div style={{ position: "absolute", bottom: 50, left: 60, right: 60, height: 1, background: "#eee" }} />
-    </>
-  );
-}
-
-function BookDarkBorder() {
-  return (
-    <>
-      <div style={{ position: "absolute", top: 50, left: 60, right: 60, height: 1, background: "#333" }} />
-      <div style={{ position: "absolute", bottom: 50, left: 60, right: 60, height: 1, background: "#333" }} />
-    </>
-  );
-}
-
-function BookWarmBorder() {
-  return (
-    <>
-      <div style={{ position: "absolute", top: 45, left: 55, right: 55, height: 1, background: "#d8ccac" }} />
-      <div style={{ position: "absolute", bottom: 45, left: 55, right: 55, height: 1, background: "#d8ccac" }} />
-    </>
-  );
-}
-
-function BookElegantBorder() {
-  return (
-    <>
-      <div style={{ position: "absolute", top: 40, left: 50, right: 50, height: 1, background: "#c8bda8" }} />
-      <div style={{ position: "absolute", top: 44, left: 50, right: 50, height: 1, background: "#c8bda8", opacity: 0.4 }} />
-      <div style={{ position: "absolute", bottom: 40, left: 50, right: 50, height: 1, background: "#c8bda8" }} />
-      <div style={{ position: "absolute", bottom: 44, left: 50, right: 50, height: 1, background: "#c8bda8", opacity: 0.4 }} />
-    </>
-  );
-}
-
-function BorderForTemplate({ style }: { style: TemplateConfig["borderStyle"] }) {
-  switch (style) {
-    case "book-classic": return <BookClassicBorder />;
-    case "book-minimal": return <BookMinimalBorder />;
-    case "book-dark": return <BookDarkBorder />;
-    case "book-warm": return <BookWarmBorder />;
-    case "book-elegant": return <BookElegantBorder />;
-  }
 }
 
 // ─── Text with inline dividers ───────────────────────────────
@@ -101,39 +54,67 @@ function TextWithDividers({
   showIllustrations,
   illustrationColor,
   cardIndex,
+  highlightFirst,
+  accentColor,
+  autoTitle,
 }: {
   text: string;
   textStyle: Record<string, unknown>;
   showIllustrations: boolean;
   illustrationColor: string;
   cardIndex: number;
+  highlightFirst?: boolean;
+  accentColor?: string;
+  autoTitle?: boolean;
 }) {
-  if (!showIllustrations) {
+  const groups = splitIntoParagraphs(text);
+
+  // Simple single paragraph
+  if (groups.length <= 1 && !highlightFirst) {
     return <p style={textStyle as React.CSSProperties}>{text}</p>;
   }
 
-  const groups = splitIntoParagraphs(text);
-  if (groups.length <= 1) {
-    return <p style={textStyle as React.CSSProperties}>{text}</p>;
-  }
+  const chunks = groups.length > 1 ? groups : [text];
 
   return (
     <>
-      {groups.map((chunk, i) => (
-        <React.Fragment key={i}>
-          <p style={textStyle as React.CSSProperties}>{chunk}</p>
-          {i < groups.length - 1 && (
-            <div style={{
-              display: "flex",
-              justifyContent: "center",
-              padding: "12px 0",
-              opacity: 0.25,
-            }}>
-              {getDivider(cardIndex * 3 + i, illustrationColor)}
-            </div>
-          )}
-        </React.Fragment>
-      ))}
+      {chunks.map((chunk, i) => {
+        const isFirst = i === 0 && highlightFirst && cardIndex === 0;
+        const isAutoTitle = i === 0 && autoTitle && chunk.length < 40 && chunks.length > 1;
+        return (
+          <React.Fragment key={i}>
+            {isAutoTitle ? (
+              <p style={{
+                ...textStyle,
+                fontSize: `${parseFloat(String(textStyle.fontSize)) * 1.3}px`,
+                fontWeight: "700",
+                textIndent: "0",
+                marginBottom: "0.4em",
+              } as React.CSSProperties}>{chunk}</p>
+            ) : isFirst ? (
+              <div style={{
+                borderLeft: `4px solid ${accentColor || "#e63946"}`,
+                paddingLeft: "16px",
+                marginBottom: "0.5em",
+              }}>
+                <p style={{ ...textStyle, fontWeight: "600" } as React.CSSProperties}>{chunk}</p>
+              </div>
+            ) : (
+              <p style={textStyle as React.CSSProperties}>{chunk}</p>
+            )}
+            {showIllustrations && i < chunks.length - 1 && (
+              <div style={{
+                display: "flex",
+                justifyContent: "center",
+                padding: "12px 0",
+                opacity: 0.25,
+              }}>
+                {getDivider(cardIndex * 3 + i, illustrationColor)}
+              </div>
+            )}
+          </React.Fragment>
+        );
+      })}
     </>
   );
 }
@@ -166,7 +147,10 @@ function CardNode({
   isMarkdown?: boolean;
 }) {
   const isTwoCol = template.layout === "two-column";
-  const margin = 60;
+  const pad = template.cardPadding ?? [48, 50, 48];
+  const padTop = pad[0];
+  const padH = pad[1];
+  const padBottom = pad[2];
   const actualFontSize = fontSize ?? parseInt(template.textStyle.fontSize as string) ?? 48;
   const actualLineHeight = actualFontSize >= 48 ? 1.8 : actualFontSize >= 40 ? 1.75 : 1.7;
   const actualFontFamily = fontFamily ?? template.textStyle.fontFamily;
@@ -199,7 +183,7 @@ function CardNode({
         ...template.cardStyle,
       }}
     >
-      <BorderForTemplate style={template.borderStyle} />
+      <CardBorder color={template.borderColor} />
 
       {/* Decorative illustration */}
       {showIllustrations && (
@@ -216,27 +200,29 @@ function CardNode({
       )}
 
       {/* Header bar */}
-      <div style={{
-        position: "absolute",
-        top: margin,
-        left: margin + 10,
-        right: margin + 10,
-        zIndex: 1,
-        ...template.headerStyle,
-      }}>
-        <span>TextCard</span>
-        <span style={{ float: "right", fontSize: "14px", fontWeight: "400", opacity: 0.6 }}>
-          Page {index + 1} of {total}
-        </span>
-      </div>
+      {template.showHeader !== false && (
+        <div style={{
+          position: "absolute",
+          top: padTop,
+          left: padH,
+          right: padH,
+          zIndex: 1,
+          ...template.headerStyle,
+        }}>
+          <span>TextCard</span>
+          <span style={{ float: "right", fontSize: "14px", fontWeight: "400", opacity: 0.6 }}>
+            Page {index + 1} of {total}
+          </span>
+        </div>
+      )}
 
       {/* Body content */}
       <div style={{
         position: "absolute",
-        top: margin + 50,
-        left: margin + 10,
-        right: margin + 10,
-        bottom: margin + 40,
+        top: template.showHeader !== false ? padTop + 50 : padTop,
+        left: padH,
+        right: padH,
+        bottom: padBottom + 30,
         overflow: "hidden",
         zIndex: 1,
         display: isTwoCol ? "flex" : "block",
@@ -298,6 +284,7 @@ function CardNode({
               fontFamily: actualFontFamily,
               fontSize: `${actualFontSize}px`,
               lineHeight: String(actualLineHeight),
+              textIndent: template.textIndent ?? undefined,
               margin: 0,
               whiteSpace: "pre-wrap",
               wordBreak: "break-word",
@@ -306,6 +293,9 @@ function CardNode({
             showIllustrations={showIllustrations}
             illustrationColor={template.illustrationColor}
             cardIndex={index}
+            highlightFirst={template.highlightFirst}
+            accentColor={template.accentColor}
+            autoTitle={template.autoTitle}
           />
         )}
       </div>
@@ -313,7 +303,7 @@ function CardNode({
       {/* Page number bottom */}
       <div style={{
         position: "absolute",
-        bottom: margin - 15,
+        bottom: padBottom - 10,
         left: 0,
         right: 0,
         textAlign: "center",

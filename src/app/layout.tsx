@@ -13,9 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "TextCard — Turn text into beautiful card images",
+  title: "Inkify AI — Turn text into shareable cards",
   description:
-    "Paste any long-form text and instantly export it as a series of stylish 1080×1080 card images, ready for social media.",
+    "Transform articles, stories, and ideas into beautiful multi-page card images. Automatically split and styled, ready for social media. No design skills needed.",
 };
 
 export default function RootLayout({

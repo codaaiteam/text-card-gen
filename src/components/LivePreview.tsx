@@ -44,6 +44,7 @@ export default function LivePreview({
 
   const textStyleOverride = {
     ...template.textStyle,
+    textIndent: template.textIndent ?? undefined,
     fontFamily,
     fontSize: `${fontSize}px`,
     lineHeight: String(lineHeight),
@@ -100,24 +101,26 @@ export default function LivePreview({
           )}
 
           {/* Header */}
-          <div style={{
-            position: "absolute",
-            top: margin,
-            left: margin + 10,
-            right: margin + 10,
-            zIndex: 1,
-            ...template.headerStyle,
-          }}>
-            <span>TextCard</span>
-            <span style={{ float: "right", fontSize: "14px", fontWeight: "400", opacity: 0.6 }}>
-              Page 1 of 3
-            </span>
-          </div>
+          {template.showHeader !== false && (
+            <div style={{
+              position: "absolute",
+              top: margin,
+              left: margin + 10,
+              right: margin + 10,
+              zIndex: 1,
+              ...template.headerStyle,
+            }}>
+              <span>TextCard</span>
+              <span style={{ float: "right", fontSize: "14px", fontWeight: "400", opacity: 0.6 }}>
+                Page 1 of 3
+              </span>
+            </div>
+          )}
 
           {/* Body */}
           <div style={{
             position: "absolute",
-            top: margin + 50,
+            top: template.showHeader !== false ? margin + 50 : margin + 10,
             left: margin + 10,
             right: margin + 10,
             bottom: margin + 40,
@@ -151,20 +154,28 @@ export default function LivePreview({
               />
             ) : (
               (() => {
-                if (!showIllustrations) return <p style={textStyleOverride}>{sampleText}</p>;
                 const sentences = sampleText.split(/(?<=[。！？…．.!?])/);
-                if (sentences.length <= 2) return <p style={textStyleOverride}>{sampleText}</p>;
-                const groupSize = Math.ceil(sentences.length / 3);
+                const groupSize = Math.max(1, Math.ceil(sentences.length / 3));
                 const groups: string[] = [];
                 for (let i = 0; i < sentences.length; i += groupSize) {
                   const chunk = sentences.slice(i, i + groupSize).join("").trim();
                   if (chunk) groups.push(chunk);
                 }
+                if (groups.length <= 1 && !template.highlightFirst) {
+                  return <p style={textStyleOverride}>{sampleText}</p>;
+                }
+                const chunks = groups.length > 1 ? groups : [sampleText];
                 return (<>
-                  {groups.map((chunk, i) => (
+                  {chunks.map((chunk, i) => (
                     <React.Fragment key={i}>
-                      <p style={textStyleOverride}>{chunk}</p>
-                      {i < groups.length - 1 && (
+                      {i === 0 && template.highlightFirst ? (
+                        <div style={{ borderLeft: `4px solid ${template.accentColor || "#e63946"}`, paddingLeft: "16px", marginBottom: "0.5em" }}>
+                          <p style={{ ...textStyleOverride, fontWeight: "600" }}>{chunk}</p>
+                        </div>
+                      ) : (
+                        <p style={textStyleOverride}>{chunk}</p>
+                      )}
+                      {showIllustrations && i < chunks.length - 1 && (
                         <div style={{ display: "flex", justifyContent: "center", padding: "12px 0", opacity: 0.25 }}>
                           {getDivider(i, template.illustrationColor)}
                         </div>

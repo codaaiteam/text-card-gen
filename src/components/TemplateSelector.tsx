@@ -45,7 +45,7 @@ function LayoutPreview({ tpl }: { tpl: TemplateConfig }) {
 
 export default function TemplateSelector({ selectedId, onSelect }: TemplateSelectorProps) {
   return (
-    <div className="grid grid-cols-5 gap-2">
+    <div className="grid grid-cols-6 gap-1.5">
       {templates.map((tpl) => (
         <button
           key={tpl.id}
